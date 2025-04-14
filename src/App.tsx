@@ -1,7 +1,8 @@
-import './App.css';
+import '@/App.css';
+import { Button } from '@/components/ui/button';
 
 function App() {
-  return <h1 className="text-lg">Welcome to aPlay</h1>;
+  return <Button>This is a button</Button>;
 }
 
 export default App;
