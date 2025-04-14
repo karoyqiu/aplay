@@ -2,7 +2,7 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { ProgressBarStatus, getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
 import { FolderOpen, LogOut, Pause, Play, RefreshCw } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useDebounceCallback, useEventListener, useHover, useLocalStorage } from 'usehooks-ts';
 
 import '@/App.css';
@@ -40,13 +40,13 @@ function App() {
   const player = useRef<HTMLAudioElement>(null);
   const track = useRef<HTMLTrackElement>(null);
 
-  const doSaveRecent = useCallback(
+  const saveRecent = useDebounceCallback(
     (url: string, ts: number) => {
       setRecent({ url, ts });
     },
-    [setRecent],
+    500,
+    { maxWait: 1000 },
   );
-  const saveRecent = useDebounceCallback(doSaveRecent, 1000);
 
   // @ts-expect-error
   const isHover = useHover(root);
@@ -143,11 +143,11 @@ function App() {
           </Button>
           <Button
             disabled={!canPlay}
-            onClick={async () => {
+            onClick={() => {
               if (playing) {
-                await player.current?.pause();
+                player.current?.pause();
               } else {
-                await player.current?.play();
+                player.current?.play();
               }
             }}
           >
