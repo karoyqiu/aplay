@@ -921,12 +921,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tauri-apps/plugin-opener@npm:^2.2.6":
-  version: 2.2.6
-  resolution: "@tauri-apps/plugin-opener@npm:2.2.6"
+"@tauri-apps/plugin-window-state@npm:~2":
+  version: 2.2.2
+  resolution: "@tauri-apps/plugin-window-state@npm:2.2.2"
   dependencies:
     "@tauri-apps/api": "npm:^2.0.0"
-  checksum: 10/b551300e9e08a00f3b1307618d5c8a8ff95c6d28c5acfa20e03a988e13657eb0ba108a5c4cb61c8355b2328c6d00fc834bec211b5838aea6ab7fff0d2e311bee
+  checksum: 10/d299878ed7478cd93a2bc92fb1c3f6906a8de6baaff5cd13116c2578f40b81c998cf59a5af3e829f486cf149ccf5f61d8c349b1aaab5982cf3f97759396b57b4
   languageName: node
   linkType: hard
 
@@ -1098,7 +1098,7 @@ __metadata:
     "@tailwindcss/vite": "npm:^4.1.3"
     "@tauri-apps/api": "npm:^2.4.1"
     "@tauri-apps/cli": "npm:^2.4.1"
-    "@tauri-apps/plugin-opener": "npm:^2.2.6"
+    "@tauri-apps/plugin-window-state": "npm:~2"
     "@trivago/prettier-plugin-sort-imports": "npm:^5.2.2"
     "@types/node": "npm:^22.14.1"
     "@types/react": "npm:^19.1.1"
