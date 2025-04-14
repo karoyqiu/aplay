@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "aPlay",
-        "width": 1000,
-        "height": 200,
+        "width": 900,
+        "height": 128,
         "alwaysOnTop": true,
         "decorations": false,
         "dragDropEnabled": false,

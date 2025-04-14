@@ -3,12 +3,14 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
 import { FolderOpen, LogOut, Pause, Play } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { useEventCallback } from 'usehooks-ts';
+import { useEventCallback, useHover } from 'usehooks-ts';
 
 import '@/App.css';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { Slider } from '@/components/ui/slider';
+
+import { cn } from './lib/utils';
 
 const appWindow = getCurrentWindow();
 
@@ -27,9 +29,13 @@ function App() {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [seeking, setSeeking] = useState(false);
+  const [cues, setCues] = useState<string[]>([]);
+  const root = useRef<HTMLDivElement>(null);
   const player = useRef<HTMLAudioElement>(null);
   const track = useRef<HTMLTrackElement>(null);
-  const [cues, setCues] = useState<string[]>([]);
+
+  // @ts-expect-error
+  const isHover = useHover(root);
 
   const onCueChange = useEventCallback(() => {
     if (track.current) {
@@ -50,7 +56,11 @@ function App() {
 
   return (
     <div
-      className="bg-primary/20 flex h-screen w-screen flex-col p-2"
+      ref={root}
+      className={cn(
+        'flex h-screen w-screen flex-col p-2 transition-colors duration-200',
+        isHover ? 'bg-background/80' : 'bg-background/50',
+      )}
       onMouseDown={(e) => {
         if (e.currentTarget === e.target) {
           appWindow.startDragging();
@@ -62,7 +72,7 @@ function App() {
           <p key={cue}>{cue}</p>
         ))}
       </div>
-      <div className="flex items-center gap-2">
+      <div className={cn('flex items-center gap-2', !isHover && 'hidden')}>
         <ButtonGroup variant="outline" size="icon">
           <Button
             onClick={async () => {
