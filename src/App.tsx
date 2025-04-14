@@ -1,16 +1,15 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { ProgressBarStatus, getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
-import { FolderOpen, LogOut, Pause, Play } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { useEventListener, useHover } from 'usehooks-ts';
+import { FolderOpen, LogOut, Pause, Play, RefreshCw } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import { useDebounceCallback, useEventListener, useHover, useLocalStorage } from 'usehooks-ts';
 
 import '@/App.css';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { Slider } from '@/components/ui/slider';
-
-import { cn } from './lib/utils';
+import { cn } from '@/lib/utils';
 
 const appWindow = getCurrentWindow();
 
@@ -23,6 +22,11 @@ const nts = (seconds: number) => {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 };
 
+type RecentPlay = {
+  url: string;
+  ts: number;
+};
+
 function App() {
   const [canPlay, setCanPlay] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -30,9 +34,19 @@ function App() {
   const [currentTime, setCurrentTime] = useState(0);
   const [seeking, setSeeking] = useState(false);
   const [cues, setCues] = useState<string[]>([]);
+  const [justRun, setJustRun] = useState(true);
+  const [recent, setRecent, removeRecent] = useLocalStorage<RecentPlay | null>('recent', null);
   const root = useRef<HTMLDivElement>(null);
   const player = useRef<HTMLAudioElement>(null);
   const track = useRef<HTMLTrackElement>(null);
+
+  const doSaveRecent = useCallback(
+    (url: string, ts: number) => {
+      setRecent({ url, ts });
+    },
+    [setRecent],
+  );
+  const saveRecent = useDebounceCallback(doSaveRecent, 1000);
 
   // @ts-expect-error
   const isHover = useHover(root);
@@ -72,11 +86,31 @@ function App() {
         }
       }}
     >
-      <div className="my-auto flex flex-col items-center text-xl">
-        {cues.map((cue) => (
-          <p key={cue}>{cue}</p>
-        ))}
-      </div>
+      {justRun && recent?.url ? (
+        <Button
+          className="my-auto"
+          onClick={() => {
+            if (track.current) {
+              track.current.src = `${recent.url}.vtt`;
+            }
+
+            if (player.current) {
+              player.current.src = recent.url;
+              player.current.currentTime = Math.max(0, recent.ts - 5);
+              player.current.play();
+            }
+          }}
+        >
+          <RefreshCw />
+          Resume last play
+        </Button>
+      ) : (
+        <div className="my-auto flex flex-col items-center text-xl">
+          {cues.map((cue) => (
+            <p key={cue}>{cue}</p>
+          ))}
+        </div>
+      )}
       <div className={cn('flex items-center gap-2', !isHover && 'hidden')}>
         <ButtonGroup variant="outline" size="icon">
           <Button
@@ -139,7 +173,14 @@ function App() {
             setSeeking(false);
           }}
         />
-        <Button variant="destructive" size="icon" onClick={() => appWindow.close()}>
+        <Button
+          variant="destructive"
+          size="icon"
+          onClick={() => {
+            saveRecent.flush();
+            appWindow.close();
+          }}
+        >
           <LogOut />
         </Button>
       </div>
@@ -149,6 +190,7 @@ function App() {
         onCanPlay={() => setCanPlay(true)}
         onPlay={() => {
           setPlaying(true);
+          setJustRun(false);
           appWindow.setProgressBar({ status: ProgressBarStatus.Normal });
         }}
         onPause={() => {
@@ -156,14 +198,18 @@ function App() {
           appWindow.setProgressBar({ status: ProgressBarStatus.Paused });
         }}
         onEnded={() => {
+          saveRecent.cancel();
+          removeRecent();
           appWindow.setProgressBar({ status: ProgressBarStatus.None });
         }}
         onDurationChange={(e) => setDuration(e.currentTarget.duration)}
         onTimeUpdate={(e) => {
           if (!seeking) {
-            setCurrentTime(e.currentTarget.currentTime);
+            const ts = e.currentTarget.currentTime;
+            setCurrentTime(ts);
+            saveRecent(e.currentTarget.src, ts);
             appWindow.setProgressBar({
-              progress: Math.round((e.currentTarget.currentTime * 100) / duration),
+              progress: Math.round((ts * 100) / duration),
             });
           }
         }}
