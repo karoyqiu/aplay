@@ -1,9 +1,9 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { ProgressBarStatus, getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
 import { FolderOpen, LogOut, Pause, Play } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { useEventCallback, useHover } from 'usehooks-ts';
+import { useEventListener, useHover } from 'usehooks-ts';
 
 import '@/App.css';
 import { Button } from '@/components/ui/button';
@@ -37,22 +37,27 @@ function App() {
   // @ts-expect-error
   const isHover = useHover(root);
 
-  const onCueChange = useEventCallback(() => {
-    if (track.current) {
-      const actives = track.current.track.activeCues;
-      const lines: string[] = [];
+  useEventListener(
+    'cuechange',
+    () => {
+      if (track.current) {
+        const actives = track.current.track.activeCues;
+        const lines: string[] = [];
 
-      if (actives) {
-        for (const cue of actives) {
-          if (cue instanceof VTTCue) {
-            lines.push(cue.text);
+        if (actives) {
+          for (const cue of actives) {
+            if (cue instanceof VTTCue) {
+              lines.push(cue.text);
+            }
           }
         }
-      }
 
-      setCues(lines);
-    }
-  });
+        setCues(lines);
+      }
+    },
+    // @ts-expect-error
+    track,
+  );
 
   return (
     <div
@@ -77,8 +82,6 @@ function App() {
           <Button
             onClick={async () => {
               if (player.current && track.current) {
-                track.current.oncuechange = onCueChange;
-
                 const filename = await open({
                   filters: [
                     { extensions: ['mp3', 'wav'], name: 'Audio files' },
@@ -93,6 +96,10 @@ function App() {
                     player.current.src = convertFileSrc(filename);
                     track.current.src = `${player.current.src}.vtt`;
                     await player.current.play();
+                    await appWindow.setProgressBar({
+                      status: ProgressBarStatus.Normal,
+                      progress: 0,
+                    });
                   }
                 }
               }
@@ -140,12 +147,24 @@ function App() {
         className="hidden"
         ref={player}
         onCanPlay={() => setCanPlay(true)}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
+        onPlay={() => {
+          setPlaying(true);
+          appWindow.setProgressBar({ status: ProgressBarStatus.Normal });
+        }}
+        onPause={() => {
+          setPlaying(false);
+          appWindow.setProgressBar({ status: ProgressBarStatus.Paused });
+        }}
+        onEnded={() => {
+          appWindow.setProgressBar({ status: ProgressBarStatus.None });
+        }}
         onDurationChange={(e) => setDuration(e.currentTarget.duration)}
         onTimeUpdate={(e) => {
           if (!seeking) {
             setCurrentTime(e.currentTarget.currentTime);
+            appWindow.setProgressBar({
+              progress: Math.round((e.currentTarget.currentTime * 100) / duration),
+            });
           }
         }}
         crossOrigin="anonymous"
