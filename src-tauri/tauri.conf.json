@@ -15,6 +15,7 @@
         "title": "aPlay",
         "width": 1000,
         "height": 200,
+        "alwaysOnTop": true,
         "decorations": false,
         "dragDropEnabled": false,
         "shadow": true,
@@ -24,11 +25,21 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost"
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**/*"]
+      },
+      "csp": {
+        "default-src": ["'self'"],
+        "connect-src": ["ipc:", "http://ipc.localhost", "https://ipc.localhost"],
+        "img-src": ["'self'", "https:", "data:"],
+        "media-src": ["asset:", "http://asset.localhost", "https://asset.localhost"],
+        "style-src": ["'self'"]
+      }
     }
   },
   "bundle": {
-    "active": true,
+    "active": false,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
