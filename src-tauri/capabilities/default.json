@@ -8,6 +8,11 @@
     "core:window:allow-close",
     "core:window:allow-set-progress-bar",
     "core:window:allow-start-dragging",
-    "dialog:default"
+    "dialog:default",
+    "fs:default",
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": ["**/*"]
+    }
   ]
 }

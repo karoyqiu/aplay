@@ -1,7 +1,9 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { dirname, join } from '@tauri-apps/api/path';
 import { ProgressBarStatus, getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
-import { FolderOpen, LogOut, Pause, Play, RefreshCw } from 'lucide-react';
+import { readDir } from '@tauri-apps/plugin-fs';
+import { FolderOpen, LogOut, Pause, Play, RefreshCw, SkipBack, SkipForward } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useDebounceCallback, useEventListener, useHover, useLocalStorage } from 'usehooks-ts';
 
@@ -12,6 +14,10 @@ import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 const appWindow = getCurrentWindow();
+const audioExtensions = ['mp3', 'wav'];
+
+const isAudioFile = (filename: string) =>
+  audioExtensions.some((ext) => filename.endsWith(`.${ext}`));
 
 const pad = (value: number, maxLength = 2) => value.toString().padStart(maxLength, '0');
 
@@ -36,9 +42,12 @@ function App() {
   const [cues, setCues] = useState<string[]>([]);
   const [justRun, setJustRun] = useState(true);
   const [recent, setRecent, removeRecent] = useLocalStorage<RecentPlay | null>('recent', null);
+  const [filename, setFilename] = useState('');
+  const [allFiles, setAllFiles] = useState<string[]>([]);
   const root = useRef<HTMLDivElement>(null);
   const player = useRef<HTMLAudioElement>(null);
   const track = useRef<HTMLTrackElement>(null);
+  const currentFileIndex = allFiles.indexOf(filename);
 
   const saveRecent = useDebounceCallback(
     (url: string, ts: number) => {
@@ -47,6 +56,13 @@ function App() {
     500,
     { maxWait: 1000 },
   );
+
+  const readAllFiles = async (filename: string) => {
+    const dir = await dirname(filename);
+    const entries = await readDir(dir, {});
+    const files = entries.filter((e) => e.isFile && isAudioFile(e.name));
+    setAllFiles(await Promise.all(files.map((file) => join(dir, file.name))));
+  };
 
   // @ts-expect-error
   const isHover = useHover(root);
@@ -90,14 +106,11 @@ function App() {
         <Button
           className="my-auto"
           onClick={() => {
-            if (track.current) {
-              track.current.src = `${recent.url}.vtt`;
-            }
+            setFilename(recent.url);
+            readAllFiles(recent.url);
 
             if (player.current) {
-              player.current.src = recent.url;
               player.current.currentTime = Math.max(0, recent.ts - 5);
-              player.current.play();
             }
           }}
         >
@@ -118,23 +131,24 @@ function App() {
               if (player.current && track.current) {
                 const filename = await open({
                   filters: [
-                    { extensions: ['mp3', 'wav'], name: 'Audio files' },
+                    { extensions: audioExtensions, name: 'Audio files' },
                     { extensions: ['vtt'], name: 'WebVTT files' },
                   ],
                 });
 
                 if (filename) {
                   if (filename.endsWith('.vtt')) {
-                    track.current.src = convertFileSrc(filename);
+                    setFilename(filename.slice(0, -4));
                   } else {
-                    player.current.src = convertFileSrc(filename);
-                    track.current.src = `${player.current.src}.vtt`;
-                    await player.current.play();
+                    setFilename(filename);
                     await appWindow.setProgressBar({
                       status: ProgressBarStatus.Normal,
                       progress: 0,
                     });
                   }
+
+                  setCues([]);
+                  await readAllFiles(filename);
                 }
               }
             }}
@@ -152,6 +166,24 @@ function App() {
             }}
           >
             {playing ? <Pause /> : <Play />}
+          </Button>
+          <Button
+            disabled={currentFileIndex <= 0}
+            onClick={() => {
+              setFilename(allFiles[currentFileIndex - 1]);
+              setCues([]);
+            }}
+          >
+            <SkipBack />
+          </Button>
+          <Button
+            disabled={currentFileIndex < 0 || currentFileIndex >= allFiles.length - 1}
+            onClick={() => {
+              setFilename(allFiles[currentFileIndex + 1]);
+              setCues([]);
+            }}
+          >
+            <SkipForward />
           </Button>
         </ButtonGroup>
         <span className="shrink-0 font-mono text-sm">
@@ -187,6 +219,8 @@ function App() {
       <audio
         className="hidden"
         ref={player}
+        src={convertFileSrc(filename)}
+        autoPlay
         onCanPlay={() => setCanPlay(true)}
         onPlay={() => {
           setPlaying(true);
@@ -207,7 +241,7 @@ function App() {
           if (!seeking) {
             const ts = e.currentTarget.currentTime;
             setCurrentTime(ts);
-            saveRecent(e.currentTarget.src, ts);
+            saveRecent(filename, ts);
             appWindow.setProgressBar({
               progress: Math.round((ts * 100) / duration),
             });
@@ -215,7 +249,13 @@ function App() {
         }}
         crossOrigin="anonymous"
       >
-        <track default ref={track} kind="subtitles" srcLang="zh" />
+        <track
+          default
+          ref={track}
+          src={convertFileSrc(`${filename}.vtt`)}
+          kind="subtitles"
+          srcLang="zh"
+        />
       </audio>
     </div>
   );

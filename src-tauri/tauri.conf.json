@@ -27,7 +27,7 @@
     "security": {
       "assetProtocol": {
         "enable": true,
-        "scope": ["**/*"]
+        "scope": ["**/*.mp3", "**/*.wav", "**/*.vtt"]
       },
       "csp": {
         "default-src": ["'self'"],

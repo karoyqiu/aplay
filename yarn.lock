@@ -1120,7 +1120,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tauri-apps/plugin-dialog@npm:~2":
+"@tauri-apps/plugin-dialog@npm:^2":
   version: 2.2.1
   resolution: "@tauri-apps/plugin-dialog@npm:2.2.1"
   dependencies:
@@ -1138,7 +1138,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tauri-apps/plugin-window-state@npm:~2":
+"@tauri-apps/plugin-window-state@npm:^2":
   version: 2.2.2
   resolution: "@tauri-apps/plugin-window-state@npm:2.2.2"
   dependencies:
@@ -1317,9 +1317,9 @@ __metadata:
     "@tailwindcss/vite": "npm:^4.1.3"
     "@tauri-apps/api": "npm:^2.4.1"
     "@tauri-apps/cli": "npm:^2.4.1"
-    "@tauri-apps/plugin-dialog": "npm:~2"
+    "@tauri-apps/plugin-dialog": "npm:^2"
     "@tauri-apps/plugin-fs": "npm:~2"
-    "@tauri-apps/plugin-window-state": "npm:~2"
+    "@tauri-apps/plugin-window-state": "npm:^2"
     "@trivago/prettier-plugin-sort-imports": "npm:^5.2.2"
     "@types/node": "npm:^22.14.1"
     "@types/react": "npm:^19.1.1"
