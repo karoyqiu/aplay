@@ -1,11 +1,17 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { dirname, join } from '@tauri-apps/api/path';
+import { basename, dirname, join } from '@tauri-apps/api/path';
 import { ProgressBarStatus, getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readDir } from '@tauri-apps/plugin-fs';
 import { FolderOpen, LogOut, Pause, Play, RefreshCw, SkipBack, SkipForward } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { useDebounceCallback, useEventListener, useHover, useLocalStorage } from 'usehooks-ts';
+import { useEffect, useRef, useState } from 'react';
+import {
+  useDebounceCallback,
+  useEventCallback,
+  useEventListener,
+  useHover,
+  useLocalStorage,
+} from 'usehooks-ts';
 
 import '@/App.css';
 import { Button } from '@/components/ui/button';
@@ -89,6 +95,78 @@ function App() {
     track,
   );
 
+  const openFile = useEventCallback(async () => {
+    if (player.current && track.current) {
+      const filename = await open({
+        filters: [
+          { extensions: audioExtensions, name: 'Audio files' },
+          { extensions: ['vtt'], name: 'WebVTT files' },
+        ],
+      });
+
+      if (filename) {
+        if (filename.endsWith('.vtt')) {
+          setFilename(filename.slice(0, -4));
+        } else {
+          setFilename(filename);
+          await appWindow.setProgressBar({
+            status: ProgressBarStatus.Normal,
+            progress: 0,
+          });
+        }
+
+        setCues([]);
+        await readAllFiles(filename);
+      }
+    }
+  });
+
+  const playPause = useEventCallback(() => {
+    if (playing) {
+      player.current?.pause();
+    } else {
+      player.current?.play();
+    }
+  });
+
+  const previous = () => {
+    if (currentFileIndex > 0) {
+      setFilename(allFiles[currentFileIndex - 1]);
+    }
+  };
+
+  const next = () => {
+    if (currentFileIndex >= 0 && currentFileIndex < allFiles.length - 1) {
+      setFilename(allFiles[currentFileIndex + 1]);
+    }
+  };
+
+  useEventListener('keydown', (e) => {
+    switch (e.key) {
+      case 'o':
+        if (e.ctrlKey) {
+          openFile();
+        }
+        break;
+
+      case ' ':
+        playPause();
+        break;
+
+      case '[':
+        previous();
+        break;
+
+      case ']':
+        next();
+        break;
+    }
+  });
+
+  useEffect(() => {
+    basename(filename).then((base) => setCues([base]));
+  }, [filename]);
+
   return (
     <div
       ref={root}
@@ -126,62 +204,18 @@ function App() {
       )}
       <div className={cn('flex items-center gap-2', !isHover && 'hidden')}>
         <ButtonGroup variant="outline" size="icon">
-          <Button
-            onClick={async () => {
-              if (player.current && track.current) {
-                const filename = await open({
-                  filters: [
-                    { extensions: audioExtensions, name: 'Audio files' },
-                    { extensions: ['vtt'], name: 'WebVTT files' },
-                  ],
-                });
-
-                if (filename) {
-                  if (filename.endsWith('.vtt')) {
-                    setFilename(filename.slice(0, -4));
-                  } else {
-                    setFilename(filename);
-                    await appWindow.setProgressBar({
-                      status: ProgressBarStatus.Normal,
-                      progress: 0,
-                    });
-                  }
-
-                  setCues([]);
-                  await readAllFiles(filename);
-                }
-              }
-            }}
-          >
+          <Button onClick={openFile}>
             <FolderOpen />
           </Button>
-          <Button
-            disabled={!canPlay}
-            onClick={() => {
-              if (playing) {
-                player.current?.pause();
-              } else {
-                player.current?.play();
-              }
-            }}
-          >
+          <Button disabled={!canPlay} onClick={playPause}>
             {playing ? <Pause /> : <Play />}
           </Button>
-          <Button
-            disabled={currentFileIndex <= 0}
-            onClick={() => {
-              setFilename(allFiles[currentFileIndex - 1]);
-              setCues([]);
-            }}
-          >
+          <Button disabled={currentFileIndex <= 0} onClick={previous}>
             <SkipBack />
           </Button>
           <Button
             disabled={currentFileIndex < 0 || currentFileIndex >= allFiles.length - 1}
-            onClick={() => {
-              setFilename(allFiles[currentFileIndex + 1]);
-              setCues([]);
-            }}
+            onClick={next}
           >
             <SkipForward />
           </Button>
