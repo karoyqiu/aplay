@@ -49,6 +49,7 @@ function App() {
   const [justRun, setJustRun] = useState(true);
   const [recent, setRecent, removeRecent] = useLocalStorage<RecentPlay | null>('recent', null);
   const [filename, setFilename] = useState('');
+  const [title, setTitle] = useState('');
   const [allFiles, setAllFiles] = useState<string[]>([]);
   const root = useRef<HTMLDivElement>(null);
   const player = useRef<HTMLAudioElement>(null);
@@ -169,7 +170,13 @@ function App() {
   });
 
   useEffect(() => {
-    basename(filename).then((base) => setCues([base]));
+    basename(filename)
+      .then((base) => {
+        setTitle(base);
+        setCues([base]);
+        appWindow.setTitle(`${base} - aPlay`);
+      })
+      .catch(() => {});
   }, [filename]);
 
   return (
@@ -185,6 +192,7 @@ function App() {
         }
       }}
     >
+      <span className={cn('text-muted-foreground text-xs', !isHover && 'hidden')}>{title}</span>
       {justRun && recent?.url ? (
         <Button
           className="my-auto"
