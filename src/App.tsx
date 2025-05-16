@@ -67,6 +67,7 @@ function App() {
     const dir = await dirname(filename);
     const entries = await readDir(dir, {});
     const files = entries.filter((e) => e.isFile && isAudioFile(e.name));
+    files.sort((a, b) => a.name.localeCompare(b.name));
     setAllFiles(await Promise.all(files.map((file) => join(dir, file.name))));
   };
 
@@ -269,6 +270,7 @@ function App() {
           saveRecent.cancel();
           removeRecent();
           appWindow.setProgressBar({ status: ProgressBarStatus.None });
+          next();
         }}
         onDurationChange={(e) => setDuration(e.currentTarget.duration)}
         onTimeUpdate={(e) => {
