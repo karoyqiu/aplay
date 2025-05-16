@@ -56,11 +56,15 @@ function App() {
   const currentFileIndex = allFiles.indexOf(filename);
 
   const saveRecent = useDebounceCallback(
-    (url: string, ts: number) => {
+    (url: string, ts: number, d: number) => {
+      setCurrentTime(ts);
       setRecent({ url, ts });
+      appWindow.setProgressBar({
+        progress: Math.round((ts * 100) / d),
+      });
     },
     500,
-    { maxWait: 1000 },
+    { leading: true, maxWait: 1000 },
   );
 
   const readAllFiles = async (filename: string) => {
@@ -275,12 +279,7 @@ function App() {
         onDurationChange={(e) => setDuration(e.currentTarget.duration)}
         onTimeUpdate={(e) => {
           if (!seeking) {
-            const ts = e.currentTarget.currentTime;
-            setCurrentTime(ts);
-            saveRecent(filename, ts);
-            appWindow.setProgressBar({
-              progress: Math.round((ts * 100) / duration),
-            });
+            saveRecent(filename, e.currentTarget.currentTime, duration);
           }
         }}
         crossOrigin="anonymous"
