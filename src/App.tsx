@@ -144,49 +144,59 @@ function App() {
   const next = () => {
     if (currentFileIndex >= 0 && currentFileIndex < allFiles.length - 1) {
       setFilename(allFiles[currentFileIndex + 1]);
+    } else {
+      setCues(['<The End>']);
     }
   };
 
-  useEventListener('keydown', (e) => {
-    switch (e.key) {
-      case 'o':
-        if (e.ctrlKey) {
-          openFile();
-        }
-        break;
+  useEventListener(
+    'keydown',
+    (e) => {
+      switch (e.key) {
+        case 'o':
+          if (e.ctrlKey) {
+            openFile();
+          }
+          break;
 
-      case ' ':
-        playPause();
-        break;
+        case ' ':
+          playPause();
+          break;
 
-      case '[':
-        previous();
-        break;
+        case '[':
+          previous();
+          break;
 
-      case ']':
-        next();
-        break;
+        case ']':
+          next();
+          break;
 
-      case 'ArrowLeft':
-        if (canPlay && player.current) {
-          player.current.currentTime = Math.max(0, player.current.currentTime - 5);
-        }
-        break;
+        case 'ArrowLeft':
+          if (canPlay && player.current) {
+            player.current.currentTime = Math.max(0, player.current.currentTime - 5);
+          }
+          break;
 
-      case 'ArrowRight':
-        if (canPlay && player.current) {
-          player.current.currentTime = Math.min(
-            player.current.duration,
-            player.current.currentTime + 5,
-          );
-        }
-        break;
+        case 'ArrowRight':
+          if (canPlay && player.current) {
+            player.current.currentTime = Math.min(
+              player.current.duration,
+              player.current.currentTime + 5,
+            );
+          }
+          break;
 
-      default:
-        console.log('Keydown', e.key);
-        break;
-    }
-  });
+        default:
+          console.log('Keydown', e.key);
+          return;
+      }
+
+      e.stopPropagation();
+      e.preventDefault();
+    },
+    undefined,
+    { capture: true },
+  );
 
   useEffect(() => {
     basename(filename)
