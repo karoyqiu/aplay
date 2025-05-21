@@ -166,6 +166,25 @@ function App() {
       case ']':
         next();
         break;
+
+      case 'ArrowLeft':
+        if (canPlay && player.current) {
+          player.current.currentTime = Math.max(0, player.current.currentTime - 5);
+        }
+        break;
+
+      case 'ArrowRight':
+        if (canPlay && player.current) {
+          player.current.currentTime = Math.min(
+            player.current.duration,
+            player.current.currentTime + 5,
+          );
+        }
+        break;
+
+      default:
+        console.log('Keydown', e.key);
+        break;
     }
   });
 
